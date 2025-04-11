@@ -1,4 +1,4 @@
-import { Schema, model, Document, Types } from "mongoose";
+import { Schema, model, Document, Types, models } from "mongoose";
 
 export interface IUser extends Document {
   name: string;
@@ -17,4 +17,6 @@ const userSchema = new Schema<IUser>(
   { timestamps: true } // Auto-add createdAt and updatedAt
 );
 
-export default model<IUser>("User", userSchema);
+const User = models.User || model<IUser>("User", userSchema);
+
+export default User;

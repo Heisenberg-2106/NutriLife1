@@ -1,26 +1,41 @@
 import { NextResponse } from "next/server"
 import clientPromise from "@/lib/mongodb"
-// import { Recipe } from "@/models/Recipe"
+import { ObjectId } from "mongodb"
+
+interface Recipe {
+  _id: ObjectId
+  name: string
+  description?: string
+  calories: number
+  protein: number
+  carbs: number
+  fats: number
+  isVegetarian: boolean
+  ingredients?: string[]
+  tags?: string[]
+  prepTime?: number
+  createdAt?: Date
+  updatedAt?: Date
+}
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url)
-    const userId = searchParams.get("userId")
-    
-    // if (!userId) {
-    //   return NextResponse.json(
-    //     { error: "User ID is required" },
-    //     { status: 400 }
-    //   )
-    // }
-
     const client = await clientPromise
     const db = client.db()
 
-    // Fetch all recipes (you might want to add pagination later)
-    const recipes = await db.collection("recipes").find().toArray()
+    // Fetch all recipes without any filters or limits
+    const recipes = await db.collection<Recipe>("recipes").find().toArray()
 
-    return NextResponse.json(recipes)
+    // Convert ObjectId to string for client-side and ensure tags exists
+    const serializedRecipes = recipes.map(recipe => ({
+      ...recipe,
+      _id: recipe._id.toString(),
+      createdAt: recipe.createdAt?.toISOString(),
+      updatedAt: recipe.updatedAt?.toISOString(),
+      tags: recipe.tags || [] // Ensure tags exists
+    }))
+
+    return NextResponse.json(serializedRecipes)
 
   } catch (error) {
     console.error("Error fetching recipes:", error)

@@ -1,6 +1,5 @@
 "use client"
 
-import type React from "react"
 import { useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { signIn } from "next-auth/react"
@@ -26,28 +25,56 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Basic validation
+    if (!formData.email || !formData.password) {
+      toast({
+        title: "Missing credentials",
+        description: "Please enter both email and password",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsLoading(true)
 
     try {
       const result = await signIn("credentials", {
         redirect: false,
-        email: formData.email,
+        email: formData.email.toLowerCase().trim(), // Normalize email
         password: formData.password,
+        callbackUrl,
       })
 
       if (result?.error) {
+        // Handle specific error messages
+        let errorMessage = "Invalid email or password"
+        if (result.error === "CredentialsSignin") {
+          errorMessage = "Invalid credentials"
+        } else if (result.error.includes("ECONNREFUSED")) {
+          errorMessage = "Cannot connect to authentication server"
+        }
+
         toast({
           title: "Authentication failed",
-          description: "Invalid email or password. Please try again.",
+          description: errorMessage,
           variant: "destructive",
         })
       } else {
-        router.push(callbackUrl)
+        // Successful login
+        toast({
+          title: "Login successful",
+          description: "Redirecting to your dashboard...",
+        })
+        
+        // Force a page reload to ensure session state is updated
+        window.location.href = callbackUrl
       }
     } catch (error) {
+      console.error("Login error:", error)
       toast({
         title: "Something went wrong",
-        description: "An error occurred during login. Please try again.",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -60,7 +87,9 @@ export default function LoginPage() {
       <Card className="w-full max-w-md glassmorphic">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center neon-text">NutriLife</CardTitle>
-          <CardDescription className="text-center">Enter your credentials to sign in</CardDescription>
+          <CardDescription className="text-center">
+            Enter your credentials to sign in
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -75,12 +104,19 @@ export default function LoginPage() {
                 onChange={handleChange}
                 className="glassmorphic"
                 required
+                autoComplete="username"
               />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <Link href="/forgot-password" className="text-xs text-neon-blue hover:underline">Forgot password?</Link>
+                <Link 
+                  href="/forgot-password" 
+                  className="text-xs text-neon-blue hover:underline"
+                  tabIndex={isLoading ? -1 : 0}
+                >
+                  Forgot password?
+                </Link>
               </div>
               <Input
                 id="password"
@@ -91,20 +127,35 @@ export default function LoginPage() {
                 onChange={handleChange}
                 className="glassmorphic"
                 required
+                autoComplete="current-password"
               />
             </div>
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-neon-blue/80 hover:bg-neon-blue animate-glow" style={{ backgroundColor: '#00f0ff' }}
+              className="w-full bg-neon-blue/80 hover:bg-neon-blue animate-glow" 
+              style={{ backgroundColor: '#00f0ff' }}
+              aria-disabled={isLoading}
             >
-              {isLoading ? "Signing in..." : "Sign In"}
+              {isLoading ? (
+                <>
+                  <span className="animate-pulse">🔒</span> Signing in...
+                </>
+              ) : (
+                "Sign In"
+              )}
             </Button>
           </form>
 
           <div className="mt-4 text-center text-sm">
             <span className="text-white/70">Don't have an account?</span>{" "}
-            <Link href="/register" className="text-neon-blue hover:underline">Sign up</Link>
+            <Link 
+              href="/register" 
+              className="text-neon-blue hover:underline"
+              tabIndex={isLoading ? -1 : 0}
+            >
+              Sign up
+            </Link>
           </div>
         </CardContent>
         <CardFooter className="flex flex-col">
@@ -113,17 +164,29 @@ export default function LoginPage() {
               <div className="w-full border-t border-white/10"></div>
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="bg-background px-2 text-white/70">Or continue with</span>
+              <span className="bg-background px-2 text-white/70">
+                Or continue with
+              </span>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4 w-full">
-            <Button variant="outline" className="border-white/10 hover:bg-white/5">
+            <Button 
+              variant="outline" 
+              className="border-white/10 hover:bg-white/5"
+              onClick={() => signIn("google", { callbackUrl })}
+              disabled={isLoading}
+            >
               <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M20.283 10.356h-8.327v3.451h4.792c-.446 2.193-2.313 3.453-4.792 3.453a5.27 5.27 0 0 1-5.279-5.28 5.27 5.27 0 0 1 5.279-5.279c1.259 0 2.397.447 3.29 1.178l2.6-2.599c-1.584-1.381-3.615-2.233-5.89-2.233a8.908 8.908 0 0 0-8.934 8.934 8.907 8.907 0 0 0 8.934 8.934c4.467 0 8.529-3.249 8.529-8.934 0-.528-.081-1.097-.202-1.625z"></path>
               </svg>
               Google
             </Button>
-            <Button variant="outline" className="border-white/10 hover:bg-white/5">
+            <Button 
+              variant="outline" 
+              className="border-white/10 hover:bg-white/5"
+              onClick={() => signIn("github", { callbackUrl })}
+              disabled={isLoading}
+            >
               <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 2C6.47598 2 2.00098 6.475 2.00098 12C2.00098 16.425 4.86348 20.1625 8.83848 21.4875C9.33848 21.575 9.52598 21.275 9.52598 21.0125V19.15C7.00098 19.6125 6.35098 18.5375 6.15098 17.975C7.55098 18.4375 8.98848 18.0125 9.56348 17.75C9.65098 17.1 9.91348 16.6625 10.201 16.4125C7.97598 16.1625 5.65098 15.3 5.65098 11.475C5.65098 10.3875 6.03848 9.4875 6.67598 8.7875H12V2Z"></path>
               </svg>

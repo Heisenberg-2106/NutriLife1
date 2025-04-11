@@ -58,6 +58,9 @@ export default function RegisterPage() {
       const data = await response.json()
 
       if (!response.ok) {
+        if (response.status === 409) {
+          throw new Error("Email already registered. Please log in or use another email.")
+        }
         throw new Error(data.error || "Failed to register")
       }
 

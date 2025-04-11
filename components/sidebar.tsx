@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, Utensils, Activity, Droplet, LineChart, Settings, LogOut } from "lucide-react"
+import { LayoutDashboard, Utensils, Activity, Droplet, LineChart, Settings, LogOut, Brain , MessageSquareText } from "lucide-react"
 
 export default function Sidebar() {
   const pathname = usePathname()
@@ -40,6 +40,16 @@ export default function Sidebar() {
       icon: Settings,
       label: "Settings",
     },
+    {
+      href: "/prediction",
+      icon: Brain,
+      label: "Predictions"
+    },
+    {
+      href: "/chatbot",
+      icon:  MessageSquareText,
+      label: "Chatbot"
+    }
   ]
 
   return (
